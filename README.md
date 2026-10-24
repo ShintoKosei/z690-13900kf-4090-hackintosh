@@ -54,7 +54,7 @@
 
 ```bash
 # 1. 克隆或下载本仓库
-git clone https://github.com/<your-name>/13900kf-z690-4090-efi.git
+git clone https://github.com/ShintoKosei/z690-13900kf-4090-hackintosh.git
 
 # 2. 生成三码并填入 OC/config.plist
 #    用 GenSMBIOS 或 OCAuxiliaryTools，机型选 MacPro7,1
