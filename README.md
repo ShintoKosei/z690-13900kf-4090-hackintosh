@@ -110,7 +110,7 @@ EFI/
 ## 已启用的 Kext
 
 <details>
-<summary>点击展开 16 个 kext 及作用</summary>
+<summary>点击展开 19 个 kext 及作用</summary>
 
 | Kext | 作用 |
 |---|---|
@@ -118,9 +118,13 @@ EFI/
 | `AMFIPass.kext` | 绕过 AMFI 签名检查 |
 | `AppleIGC.kext` | Intel I225-V 2.5G 有线网卡 |
 | `BlueToolFixup.kext` | 蓝牙通用补丁（Monterey+） |
+| `IntelBTPatcher.kext` | Intel 蓝牙 macOS 12+ 兼容补丁（2.5.0） |
+| `IntelBluetoothFirmware.kext` | Intel 蓝牙固件上载（2.5.0） |
+| `AirportItlwm.kext` | **Intel Wi-Fi 原生驱动**（laobamac run53，支持 CNVi/AX211） |
 | `CpuTopologyRebuild.kext` | 大小核拓扑修正 |
+| `CPUFriend.kext` | CPU 电源管理数据注入（1.3.1） |
+| `CPUFriendDataProvider.kext` | 自定义频率向量 / 电源策略（针对 13900KF 调优） |
 | `NVMeFix.kext` | NVMe 电源管理（APST） |
-| `RealtekBluetoothFirmware.kext` | Realtek USB 蓝牙固件 |
 | `RestrictEvents.kext` | 屏蔽不需要的系统事件 |
 | `VirtualSMC.kext` | SMC 模拟核心 |
 | `SMCProcessor.kext` | CPU 传感器 |
@@ -129,18 +133,19 @@ EFI/
 | `UTBDefault.kext` | USB 端口默认配置 |
 | `WhateverGreen.kext` | 显卡补丁 |
 | `XHCI-unsupported.kext` | 12/13 代 PCH XHCI 支持 |
-| `itlwm.kext` | Intel 无线网卡驱动 |
 
 </details>
 
-**另有 2 个默认禁用的 Intel 蓝牙 kext：**
+**另有 2 个保留但已禁用的 kext：**
 
-```
-IntelBluetoothFirmware.kext
-IntelBTPatcher.kext
-```
+| Kext | 禁用原因 |
+|---|---|
+| `RealtekBluetoothFirmware.kext` | 外接 Realtek USB 蓝牙；改用板载 Intel 蓝牙后停用 |
+| `itlwm.kext` | 旧 Wi-Fi 方案（需 HeliPort）；改用 `AirportItlwm` 后停用 |
 
-要用 AX211 内置蓝牙时，启用这两个 + 禁用 `RealtekBluetoothFirmware.kext`，**并拔掉 Realtek USB 蓝牙适配器**（[官方 FAQ](https://openintelwireless.github.io/IntelBluetoothFirmware/FAQ.html)：Intel 蓝牙不能与其他蓝牙共存）。
+> ⚠️ `itlwm` 与 `AirportItlwm` 是两套 Wi-Fi 栈，**同时启用会冲突**，只留一个。
+>
+> ⚠️ 使用板载 Intel 蓝牙时，**必须拔掉 Realtek USB 蓝牙适配器**（[官方 FAQ](https://openintelwireless.github.io/IntelBluetoothFirmware/FAQ.html)：Intel 蓝牙不能与其他蓝牙共存）。
 
 ---
 
@@ -148,9 +153,12 @@ IntelBTPatcher.kext
 
 ### 🔵 无线网卡（AX211）
 
-- **必须配合 [HeliPort](https://github.com/OpenIntelWireless/HeliPort/releases) 客户端**才能连 Wi-Fi
-- `itlwm.kext` 将网卡呈现为「以太网」，系统自带 Wi-Fi 菜单不可用
-- **AirDrop / 接力不可用** —— AX211 缺少所需硬件特性，这是物理限制
+- ✅ **原生 Wi-Fi**：`AirportItlwm.kext` 注册为 AirPort 端口，系统设置直接管理，**不需要 HeliPort**
+- ✅ 开机自动连接、菜单栏原生图标、CoreLocation 定位可用
+- ❌ **AirDrop / 接力 / 随航不可用** —— Intel 蓝牙过不了 Apple 连续互通校验，这是物理限制
+- ⚠️ 换驱动族后 `en` 序号可能重排，iMessage / FaceTime 可能要求重新登录一次
+
+> 如果你在旧版本 macOS 上，仍可用 `itlwm.kext` + [HeliPort](https://github.com/OpenIntelWireless/HeliPort/releases) 方案（把 `itlwm` 启用、`AirportItlwm` 禁用即可）。
 
 ### 🟢 NVIDIA 显卡（RTX 4090）
 
@@ -159,6 +167,21 @@ IntelBTPatcher.kext
 - `Tools/NullMothSafe.efi` 在 OpenCore 菜单提供两个救援项：
   - `1401: Remove NVIDIA driver` — 驱动装崩了一键移除
   - `1401: Start once without NVIDIA driver` — 无驱动启动一次
+
+**视频编解码实测：**
+
+| 能力 | 状态 | 说明 |
+|---|---|---|
+| H.264 硬解 | ✅ 875 FPS | NVDEC 正常工作 |
+| HEVC 硬解 | ✅ 1381 FPS | NVDEC 正常工作 |
+| H.264 硬编 | ❌ `-12912` | macOS 不支持 NVENC |
+| HEVC 硬编 | ❌ `-12912` | 同上 |
+| H.264 软编 | ⚠️ 116 FPS | 可用 |
+| HEVC 软编 | ⚠️ 4.2 FPS | 基本不可用 |
+
+> **编码不可用是硬件限制，无解**：macOS 的 VideoToolbox 只支持 Intel QuickSync / AMD VCE / Apple Silicon。NVIDIA NVENC 从未被 macOS 支持，且 13900KF 是无核显的 KF 型号。
+>
+> 需要硬件编码的话，加一块 AMD 卡（RX 6600/6800）最划算——顺带还能补上 AirDrop。
 
 ### 🔊 音频
 
@@ -239,13 +262,23 @@ OpenCore:        1.0.9 (DBG-109)
 主题:            chris1111\Flavours-OSX26 (PickerAttributes=145)
 分辨率:          Max (自动 4K)
 Kernel > Block:  0 项
-Kexts:           16 启用 / 18 总
+Kexts:           19 启用 / 21 总
 Drivers:         5 个
+Wi-Fi:           AirportItlwm 2.4.0（原生，无需 HeliPort）
+蓝牙:            Intel 三件套（固件 2.5.0）
+CPU 电源:        CPUFriend + 调优数据（单核实测 5.48 GHz）
 ```
 
 ---
 
 ## 更新日志
+
+### 2026-10-28
+- **Wi-Fi 换原生方案**：新增 `AirportItlwm` 2.4.0（laobamac run53），支持 CNVi/AX211，不再需要 HeliPort
+- **蓝牙升级**：`IntelBluetoothFirmware` / `IntelBTPatcher` 2.4.0 → 2.5.0，启用板载 Intel 蓝牙，禁用 `RealtekBluetoothFirmware`
+- **新增 CPUFriend**：`CPUFriend` 1.3.1 + 调优的 `CPUFriendDataProvider`（`perf-bias`、`iocs_*`、`tlvl` 等五项）
+- **睿频实测**：单核 4.48 → **5.48 GHz**，多核 4.21 → 5.22 GHz
+- 禁用 `itlwm`（与 AirportItlwm 冲突）
 
 ### 2026-10-24
 - 初始发布
