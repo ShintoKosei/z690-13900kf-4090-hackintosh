@@ -39,14 +39,16 @@
 
 | 部件 | 型号 | 状态 |
 |---|---|---|
-| **CPU** | Intel Core i9-13900KF | ✅ 原生支持（含大小核） |
+| **CPU** | Intel Core i9-13900KF | ✅ 原生支持（含大小核），CPUFriend 调优后单核 5.48 GHz |
 | **主板** | MSI MPG Z690 FORCE WIFI (MS-7D30) | ✅ |
-| **显卡** | NVIDIA GeForce RTX 4090 (Ada) | ⚠️ 需 NullMoth 驱动 |
+| **显卡** | NVIDIA GeForce RTX 4090 (Ada) | ⚠️ 需 NullMoth 驱动；硬解可用、硬编不可用 |
 | **内存** | 128 GB DDR5 | ✅ |
 | **有线网卡** | Intel I225-V (2.5GbE) | ✅ AppleIGC |
-| **无线网卡** | Intel Wi-Fi 6E AX211 | ⚠️ 需 HeliPort，无 AirDrop |
-| **蓝牙** | Realtek USB Bluetooth 5.0 | ✅ |
+| **无线网卡** | Intel Wi-Fi 6E AX211 | ✅ AirportItlwm 原生（无需 HeliPort），无 AirDrop |
+| **蓝牙** | Intel AX211 板载 | ✅ Intel 三件套 2.5.0 |
 | **存储** | NVMe SSD | ✅ NVMeFix |
+
+> **外接的 Realtek USB 蓝牙适配器已停用**——板载 Intel 蓝牙与它不能共存，用板载时需要拔掉。
 
 ---
 
@@ -63,6 +65,10 @@ git clone https://github.com/ShintoKosei/z690-13900kf-4090-hackintosh.git
 ```
 
 **ESP 分区在 Windows 下默认不显示**，用 [DiskGenius](https://www.diskgenius.cn/) 或 `mountvol X: /S` 访问。
+
+> 💡 **装完就能用，不需要额外安装任何 App**：Wi-Fi 由 `AirportItlwm` 注册为原生 AirPort 端口，蓝牙由 Intel 三件套驱动，系统设置里直接管理。
+>
+> ⚠️ **用板载蓝牙前请拔掉 Realtek USB 蓝牙适配器**（两个蓝牙栈不能共存）。
 
 ---
 
@@ -94,7 +100,7 @@ EFI/
     │   ├── OpenCanopy.efi       图形主题支持
     │   ├── OpenRuntime.efi
     │   └── ResetNvramEntry.efi
-    ├── Kexts/                   16 个启用的内核扩展
+    ├── Kexts/                   19 个启用的内核扩展（另 2 个保留但禁用）
     ├── Resources/               主题资源
     │   └── Image/
     │       ├── Acidanthera/     内置主题

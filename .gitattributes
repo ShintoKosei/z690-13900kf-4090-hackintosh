@@ -1,0 +1,19 @@
+# 统一用 LF，避免 Windows 编辑器/git 自动转换导致整文件 diff
+* text=auto eol=lf
+
+# 二进制文件：禁止任何换行符转换
+*.efi binary
+*.aml binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.icns binary
+
+# plist 保持 LF（OpenCore 能读，但保持一致性便于 diff）
+*.plist text eol=lf
