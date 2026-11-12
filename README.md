@@ -41,7 +41,7 @@
 |---|---|---|
 | **CPU** | Intel Core i9-13900KF | ✅ 原生支持（含大小核），CPUFriend 调优后单核 5.48 GHz |
 | **主板** | MSI MPG Z690 FORCE WIFI (MS-7D30) | ✅ |
-| **显卡** | NVIDIA GeForce RTX 4090 (Ada) | ⚠️ 需 NullMoth 驱动；硬解可用、硬编不可用 |
+| **显卡** | NVIDIA GeForce RTX 4090 (Ada) | ✅ NullMoth 驱动，硬解 + 硬编均可用 |
 | **内存** | 128 GB DDR5 | ✅ |
 | **有线网卡** | Intel I225-V (2.5GbE) | ✅ AppleIGC |
 | **无线网卡** | Intel Wi-Fi 6E AX211 | ✅ ForbiddenItlwm 原生 + **AirDrop 可用** |
@@ -178,20 +178,20 @@ EFI/
   - `1401: Remove NVIDIA driver` — 驱动装崩了一键移除
   - `1401: Start once without NVIDIA driver` — 无驱动启动一次
 
-**视频编解码实测：**
+**视频编解码实测（NullMoth 2.9）：**
 
 | 能力 | 状态 | 说明 |
 |---|---|---|
-| H.264 硬解 | ✅ 875 FPS | NVDEC 正常工作 |
-| HEVC 硬解 | ✅ 1381 FPS | NVDEC 正常工作 |
-| H.264 硬编 | ❌ `-12912` | macOS 不支持 NVENC |
-| HEVC 硬编 | ❌ `-12912` | 同上 |
-| H.264 软编 | ⚠️ 116 FPS | 可用 |
-| HEVC 软编 | ⚠️ 4.2 FPS | 基本不可用 |
+| H.264 硬解 | ✅ | NVDEC |
+| HEVC 硬解 | ✅ | NVDEC |
+| H.264 硬编 | ✅ | NVENC，NullMoth 2.4+ 开始支持 |
+| HEVC 硬编 | ✅ | 同上 |
+| H.264 软编 | ✅ | 备用路径 |
+| HEVC 软编 | ⚠️ 慢 | 仅作兜底 |
 
-> **编码不可用是硬件限制，无解**：macOS 的 VideoToolbox 只支持 Intel QuickSync / AMD VCE / Apple Silicon。NVIDIA NVENC 从未被 macOS 支持，且 13900KF 是无核显的 KF 型号。
+> **硬件编解码全部可用。** NullMoth 从 2.4 起逐步开放 NVENC：2.4 支持 RTX 20/30，2.4.4 补上 GTX 16，2.5.5 让远程桌面也能拿到硬件编码关键帧。RTX 40 系在后续版本可用（本机 4090 实测 H.264/HEVC 硬编均正常）。
 >
-> 需要硬件编码的话，加一块 AMD 卡（RX 6600/6800）最划算——顺带还能补上 AirDrop。
+> **建议保持 NullMoth 最新版**——编码支持的修复一直在跟进。早期版本会在安装时把编码器关掉，2.4.4 起不再如此。
 
 ### 🔊 音频
 
@@ -284,6 +284,7 @@ CPU 电源:        CPUFriend + 调优数据（单核实测 5.48 GHz）
 ## 更新日志
 
 ### 2026-11-12
+- **显卡硬编可用**：NullMoth 新版开放了 NVENC，H.264/HEVC 硬件编码在 RTX 4090 上实测正常（此前只能软编）
 - **Wi-Fi 换 ForbiddenItlwm 0.5.1**：`AirportItlwm` 的 fork，补上 AWDL，**AirDrop 可用**
 - 新增 `BTLEAdvFixup` 0.9.0（AirDrop 的 BLE 广播修复）
 - 禁用 `IntelBTPatcher`（ForbiddenItlwm 强制要求）
