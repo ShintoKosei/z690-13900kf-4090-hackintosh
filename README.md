@@ -44,7 +44,7 @@
 | **显卡** | NVIDIA GeForce RTX 4090 (Ada) | ⚠️ 需 NullMoth 驱动；硬解可用、硬编不可用 |
 | **内存** | 128 GB DDR5 | ✅ |
 | **有线网卡** | Intel I225-V (2.5GbE) | ✅ AppleIGC |
-| **无线网卡** | Intel Wi-Fi 6E AX211 | ✅ AirportItlwm 原生（无需 HeliPort），无 AirDrop |
+| **无线网卡** | Intel Wi-Fi 6E AX211 | ✅ ForbiddenItlwm 原生 + **AirDrop 可用** |
 | **蓝牙** | Intel AX211 板载 | ✅ Intel 三件套 2.5.0 |
 | **存储** | NVMe SSD | ✅ NVMeFix |
 
@@ -124,9 +124,10 @@ EFI/
 | `AMFIPass.kext` | 绕过 AMFI 签名检查 |
 | `AppleIGC.kext` | Intel I225-V 2.5G 有线网卡 |
 | `BlueToolFixup.kext` | 蓝牙通用补丁（Monterey+） |
-| `IntelBTPatcher.kext` | Intel 蓝牙 macOS 12+ 兼容补丁（2.5.0） |
+| ~~`IntelBTPatcher.kext`~~ | 已禁用（ForbiddenItlwm 要求） |
 | `IntelBluetoothFirmware.kext` | Intel 蓝牙固件上载（2.5.0） |
-| `AirportItlwm.kext` | **Intel Wi-Fi 原生驱动**（laobamac run53，支持 CNVi/AX211） |
+| `ForbiddenItlwm.kext` | **Intel Wi-Fi + AWDL**（0.5.1，AirDrop 支持，替代 AirportItlwm） |
+| `BTLEAdvFixup.kext` | AirDrop 的 BLE 广播修复（0.9.0，配合 ForbiddenItlwm） |
 | `CpuTopologyRebuild.kext` | 大小核拓扑修正 |
 | `CPUFriend.kext` | CPU 电源管理数据注入（1.3.1） |
 | `CPUFriendDataProvider.kext` | 自定义频率向量 / 电源策略（针对 13900KF 调优） |
@@ -147,7 +148,8 @@ EFI/
 | Kext | 禁用原因 |
 |---|---|
 | `RealtekBluetoothFirmware.kext` | 外接 Realtek USB 蓝牙；改用板载 Intel 蓝牙后停用 |
-| `itlwm.kext` | 旧 Wi-Fi 方案（需 HeliPort）；改用 `AirportItlwm` 后停用 |
+| `itlwm.kext` | 旧 Wi-Fi 方案（需 HeliPort）；改用 `ForbiddenItlwm` 后停用 |
+| ~~`AirportItlwm.kext`~~ | 已被 `ForbiddenItlwm` 取代，文件已移除 |
 
 > ⚠️ `itlwm` 与 `AirportItlwm` 是两套 Wi-Fi 栈，**同时启用会冲突**，只留一个。
 >
@@ -159,9 +161,11 @@ EFI/
 
 ### 🔵 无线网卡（AX211）
 
-- ✅ **原生 Wi-Fi**：`AirportItlwm.kext` 注册为 AirPort 端口，系统设置直接管理，**不需要 HeliPort**
+- ✅ **原生 Wi-Fi**：`ForbiddenItlwm.kext` 注册为 AirPort 端口，系统设置直接管理，**不需要 HeliPort**
 - ✅ 开机自动连接、菜单栏原生图标、CoreLocation 定位可用
-- ❌ **AirDrop / 接力 / 随航不可用** —— Intel 蓝牙过不了 Apple 连续互通校验，这是物理限制
+- ✅ **AirDrop 可用**（ForbiddenItlwm 补上了 AWDL）：实测 Mac ↔ iPhone 约 20–22 MB/s
+- ✅ 接力 / 通用剪贴板 / iMessage over Wi-Fi 可用
+- ❌ 即时热点 / 连续互通相机 / iPhone 镜像仍不可用
 - ⚠️ 换驱动族后 `en` 序号可能重排，iMessage / FaceTime 可能要求重新登录一次
 
 > 如果你在旧版本 macOS 上，仍可用 `itlwm.kext` + [HeliPort](https://github.com/OpenIntelWireless/HeliPort/releases) 方案（把 `itlwm` 启用、`AirportItlwm` 禁用即可）。
@@ -270,7 +274,7 @@ OpenCore:        1.0.9 (DBG-109)
 Kernel > Block:  0 项
 Kexts:           19 启用 / 21 总
 Drivers:         5 个
-Wi-Fi:           AirportItlwm 2.4.0（原生，无需 HeliPort）
+Wi-Fi:           ForbiddenItlwm 0.5.1（原生 + AWDL/AirDrop）
 蓝牙:            Intel 三件套（固件 2.5.0）
 CPU 电源:        CPUFriend + 调优数据（单核实测 5.48 GHz）
 ```
@@ -278,6 +282,14 @@ CPU 电源:        CPUFriend + 调优数据（单核实测 5.48 GHz）
 ---
 
 ## 更新日志
+
+### 2026-11-12
+- **Wi-Fi 换 ForbiddenItlwm 0.5.1**：`AirportItlwm` 的 fork，补上 AWDL，**AirDrop 可用**
+- 新增 `BTLEAdvFixup` 0.9.0（AirDrop 的 BLE 广播修复）
+- 禁用 `IntelBTPatcher`（ForbiddenItlwm 强制要求）
+- 调整加载顺序：`Lilu → IntelBluetoothFirmware → BlueToolFixup → BTLEAdvFixup → ForbiddenItlwm`
+- `boot-args` 追加 18 个 AWDL 参数
+- 已知限制更新：AirDrop / 接力 / 通用剪贴板从「不可用」改为「可用」
 
 ### 2026-10-28
 - **Wi-Fi 换原生方案**：新增 `AirportItlwm` 2.4.0（laobamac run53），支持 CNVi/AX211，不再需要 HeliPort
